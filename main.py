@@ -6,6 +6,12 @@ Created on Sat May 29 08:37:34 2021
 @author: rory_haggart
 """
 
+#TODO:
+    # perigee apogee stuff
+    # create a dashboard type thing that allows for variable parameters
+    # print orbital parameters that aren't tunable (eccentricity, ap/per, etc)
+    # print velocty? altitude?
+
 # for plotting
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
@@ -22,7 +28,7 @@ def main():
     except:
         pass 
     
-    semiMajorAxis = 20000 # km
+    semiMajorAxis = 25000 # km
     semiMinorAxis = 18000 # km
 
     # calculate the distance from the centre of the orbit to the focus
@@ -75,10 +81,8 @@ def plotOrbit(semiMajor, semiMinor, focus):
     #fig.set_dpi(100)
     #fig.set_size_inches(7, 6.5)
     
-    # todo:
-        # calculate maximum velocity to normalise all velocities
-        # work out how to vary speed of animation
-        # do some perigee/apogee stuff
+    rMin = np.sqrt((semiMajor - focus)**2)
+    vMax = np.sqrt(mu_Earth * (2/rMin - 1/semiMajor))
     
     # initialise the satellite animation
     def init():
@@ -93,20 +97,27 @@ def plotOrbit(semiMajor, semiMinor, focus):
         x = focus + semiMajor * np.sin(np.radians(i))
         y = semiMinor * np.cos(np.radians(i))
         
-        # distance between satellite centre and Earth centre
-        r = np.sqrt(x**2 + y**2)    
+        # distance between satellite centre and Earth centre at this point
+        r = np.sqrt(x**2 + y**2)   
         
+        # calculate the tangential speed of the satellite at this point
         vTangential = np.sqrt(mu_Earth * (2/r - 1/semiMajor))
+        
+        # normalise the speed against the point of maximum velocity
+        speed = vTangential/vMax
+    
+        # change the speed of the animation to reflect the velocity changes
+            # x/speed means x is the shortest interval (i.e. lower x -> faster)
+        anim.event_source.interval = 10/speed
         
         # move the satellite to the new point on the ellipse trajectory
         satellite.center = (x, y)
         return satellite,
-    
+        
     # execute the animation
     anim = animation.FuncAnimation(fig, animate, 
                                    init_func=init, 
                                    frames=360, 
-                                   interval=50,
                                    blit=True)
     
     plt.show()
