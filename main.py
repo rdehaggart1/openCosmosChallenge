@@ -22,6 +22,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.patches import Arrow
 from matplotlib import animation
 import matplotlib
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 import math
 import numpy as np
@@ -45,16 +46,73 @@ def main():
     except:
         pass 
     
-    semiMajorAxis = 18000 # km
+    semiMajorAxis = 19000 # km
     semiMinorAxis = 18000 # km
-
+    
+    solarAngle = 0
+    
     # calculate the distance from the centre of the orbit to the focus
     focus = np.sqrt(semiMajorAxis**2 - semiMinorAxis**2)
     eccentricity = focus / semiMajorAxis
     print(eccentricity)
+
+    # create axes
+    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
+    ax.set_facecolor((0, 0, 0))
     
     # plot and animate the satellite orbit around earth
-    plotOrbit(semiMajorAxis,semiMinorAxis, focus)
+    plotOrbit(fig, ax, semiMajorAxis,semiMinorAxis, focus)
+
+    # plot arrows to represent the sun
+    plotSun(fig, ax, solarAngle)
+    
+    plt.show()
+
+def plotSun(fig, ax, angle):
+    # get the axis limits so we know what we're working with
+    xLim = ax.get_xlim()
+    yLim = ax.get_ylim()
+    
+    # the axis rectangle has its corners on the circumference of this circle
+    boundingCircle = np.sqrt(xLim[1]**2 + yLim[1]**2)
+    
+    # list for the origins of the light rays
+    rayOrigins = [None] * 3
+
+    # so we can safely start the sun arrow on this circle
+    rayOrigins[0] = (boundingCircle * np.sin(np.radians(270 - angle)), boundingCircle * np.cos(np.radians(270 - angle)))
+    
+    raySep = 10000
+    
+    if angle > 0:
+        # a gradient value to maintain separation between each ray
+        gradient = 1+(rayOrigins[0][1] / rayOrigins[0][0])
+            
+        # calculate separation in x,y
+        raySepY = raySep / gradient 
+        raySepX = raySep - raySepY
+    
+        # find the origins of the other light rays
+        rayOrigins[1] = (rayOrigins[0][0] - raySepX, rayOrigins[0][1] + raySepY) 
+        rayOrigins[2] = (rayOrigins[0][0] + raySepX, rayOrigins[0][1] - raySepY) 
+    else:
+        # a gradient value to maintain separation between each ray
+        gradient = 1-(rayOrigins[0][1] / rayOrigins[0][0])
+            
+        # calculate separation in x,y
+        raySepY = raySep / gradient 
+        raySepX = raySep - raySepY
+    
+        # find the origins of the other light rays
+        rayOrigins[1] = (rayOrigins[0][0] - raySepX, rayOrigins[0][1] - raySepY) 
+        rayOrigins[2] = (rayOrigins[0][0] + raySepX, rayOrigins[0][1] + raySepY) 
+    
+    # plot the light rays
+    for origin in rayOrigins:
+        arrow = Arrow(origin[0], origin[1], 
+                      -rayOrigins[0][0], -rayOrigins[0][1], 
+                      width = 3000, color='y', alpha = 0.5, zorder = 0)
+        ax.add_artist(arrow)
 
 """
    @brief  draw the earth and the orbit of satellite as defined by params
@@ -62,7 +120,7 @@ def main():
    @param  the semi-minor axis of the orbit
    @param  the (positive-x) focal point of the orbit
 """
-def plotOrbit(semiMajor, semiMinor, focus):
+def plotOrbit(fig, ax, semiMajor, semiMinor, focus):
     # todo: animate the orbit - preferably keep the whole orbit visible 
         # and have the point moving around the path
     
@@ -71,19 +129,17 @@ def plotOrbit(semiMajor, semiMinor, focus):
     
     # define satellite orbit, with the focus located at centre of earth
         # todo: include an angle?
-    orbit = Ellipse([focus,0], semiMajor*2, semiMinor*2, angle=0, linewidth=1, fill=0)
+    orbit = Ellipse([focus,0], semiMajor*2, semiMinor*2, angle=0, linewidth=1, fill=0, color='b')
     
     satWidth = 2000
     satHeight = 500
     
     # define the satellite representation
-    satellite = Rectangle((0, 0), satWidth, satHeight, fc='k')
+    satellite = Rectangle((0, 0), satWidth, satHeight, fc='w')
     # define the solar panel representation so we can better visualise where it 
         # is facing at all times
-    panel = Rectangle((0, 0), satWidth, satHeight/2, fc='r')
-    
-    # create axes
-    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
+    panel = Rectangle((0, 0), satWidth, satHeight/2, fc='#FFA500')
+
     
     # plot the earth and the satellite orbit
     ax.add_artist(orbit)
@@ -154,8 +210,6 @@ def plotOrbit(semiMajor, semiMinor, focus):
                                    init_func=init, 
                                    frames=360, 
                                    blit=True)
-    
-    plt.show()
 
 if __name__ == "__main__":
     main()

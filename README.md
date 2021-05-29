@@ -18,3 +18,4 @@ This implementation uses Python to plot an orbit around the Earth as defined by 
 - The mass of the solar panel is negligible compared to the mass of the central body
 - The gravitational influence of all bodies other than the central body is negligible
 - The central body is assumed to be a perfectly homogeneous circle (i.e. the body can be assumed to have a centre of mass coincident with the centre of the body)
+- The sun is distant enough for the ray lines to be considered parallel
