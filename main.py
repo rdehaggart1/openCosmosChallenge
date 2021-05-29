@@ -23,6 +23,8 @@ from matplotlib.patches import Arrow
 from matplotlib import animation
 import matplotlib
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from IPython.display import HTML, Image
+from matplotlib import rc
 
 import math
 import numpy as np
@@ -45,6 +47,8 @@ def main():
         shell.enable_matplotlib(gui='qt')
     except:
         pass 
+    
+    rc('animation', html='html5')
     
     semiMajorAxis = 19000 # km
     semiMinorAxis = 18000 # km
