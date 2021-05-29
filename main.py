@@ -19,9 +19,11 @@ Created on Sat May 29 08:37:34 2021
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from matplotlib.patches import Rectangle
+from matplotlib.patches import Arrow
 from matplotlib import animation
 import matplotlib
 
+import math
 import numpy as np
 
     
@@ -43,7 +45,7 @@ def main():
     except:
         pass 
     
-    semiMajorAxis = 25000 # km
+    semiMajorAxis = 18000 # km
     semiMinorAxis = 18000 # km
 
     # calculate the distance from the centre of the orbit to the focus
@@ -51,9 +53,8 @@ def main():
     eccentricity = focus / semiMajorAxis
     print(eccentricity)
     
-    # plot the satellite orbit around earth
+    # plot and animate the satellite orbit around earth
     plotOrbit(semiMajorAxis,semiMinorAxis, focus)
-
 
 """
    @brief  draw the earth and the orbit of satellite as defined by params
@@ -75,8 +76,11 @@ def plotOrbit(semiMajor, semiMinor, focus):
     satWidth = 2000
     satHeight = 500
     
-    # define the satellite representation (a circle)
+    # define the satellite representation
     satellite = Rectangle((0, 0), satWidth, satHeight, fc='k')
+    # define the solar panel representation so we can better visualise where it 
+        # is facing at all times
+    panel = Rectangle((0, 0), satWidth, satHeight/2, fc='r')
     
     # create axes
     fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
@@ -84,9 +88,6 @@ def plotOrbit(semiMajor, semiMinor, focus):
     # plot the earth and the satellite orbit
     ax.add_artist(orbit)
     ax.add_artist(earth)
-    
-    labelX = -1 * RADIUS * np.sin(np.pi/4)
-    labelY = -1 * RADIUS * np.cos(np.pi/4)
 
     # make sure everything is visibile
     ax.set_xlim([-1.1*(focus + semiMajor), 1.1*(focus + semiMajor)])
@@ -102,7 +103,8 @@ def plotOrbit(semiMajor, semiMinor, focus):
     def init():
         # add the satellite to the figure
         ax.add_patch(satellite)
-        return satellite,
+        ax.add_patch(panel)
+        return satellite,panel,
     
     # animation function for the satellite
     def animate(i):
@@ -115,7 +117,8 @@ def plotOrbit(semiMajor, semiMinor, focus):
         r = np.sqrt(x**2 + y**2)   
        
         # angle between satellite and Earth centre at this point
-        theta = np.arctan(y/x)
+            # 0 radians corresponds to x-axis in this representation
+        theta = math.atan2(y,x)
         
         # calculate the tangential speed of the satellite at this point
         vTangential = np.sqrt(MU * (2/r - 1/semiMajor))
@@ -125,20 +128,26 @@ def plotOrbit(semiMajor, semiMinor, focus):
     
         # change the speed of the animation to reflect the velocity changes
             # x/speed means x is the shortest interval (i.e. lower x -> faster)
-        anim.event_source.interval = 10/speed
+        anim.event_source.interval = 15/speed
         
         # move the satellite to the new point on the ellipse trajectory
         satellite.set_xy([x - satWidth/2, y - satHeight/2])
-    
+        # position the panel representation to the 'outside' of the satellite
+        panel.set_xy([x - satWidth/2, y + satHeight/2])
+        
+        # get the axis transformation data and use this to transform to display coords
         ts = ax.transData
         coords = ts.transform([x,y])
+        # perform a rotation relative to the axes of theta radians (calculated above)
+            # and then a further 90 degrees so the 'face' of the panels is away from Earth
         tr = matplotlib.transforms.Affine2D().rotate_around(coords[0],coords[1], theta - np.pi/2)
-        t= ts + tr
-    
+        t = ts + tr
+        
+        # perform the rotative transformation
         satellite.set_transform(t)
+        panel.set_transform(t)
         
-        
-        return satellite,
+        return satellite,panel,
         
     # execute the animation
     anim = animation.FuncAnimation(fig, animate, 
