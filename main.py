@@ -7,39 +7,267 @@ Created on Sat May 29 08:37:34 2021
 """
 
 #TODO:
-    # perigee apogee stuff
     # create a dashboard type thing that allows for variable parameters
-    # print orbital parameters that aren't tunable (eccentricity, ap/per, etc)
     # print velocty? altitude?
     # create a 'orbital parent' class? allows us to easily switch between
         # bodies. e.g. change distance from sun, radius, gravity, etc
     # add the body name into parent somehow
+    # add support for solar angles in RHP
+    # add support for re-drawing when a parameter changes
+    # add calculation of solar panel power into the orbit animation
     
 # for plotting
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from matplotlib.patches import Circle
 from matplotlib.patches import Rectangle
 from matplotlib.patches import Arrow
 from matplotlib import animation
 import matplotlib
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-from IPython.display import HTML, Image
-from matplotlib import rc
 
 import math
 import numpy as np
+import sys
+import time
 
-    
 # GLOBAL CONSTANTS
 RADIUS = 6371       # radius of parent [km] (R_Earth = 6371)
 MASS = 5.972e24     # mass of Earth [kg] (M_Earth = 5.972e24)
 GRAV = 6.67408e-11  # universal gravitational constant [m3 kg-1 s-2]
-MU = GRAV * MASS    # standard gravitational parameter of Earth [m3 s−2]
+# standard gravitational parameter of Earth [km3 s−2]
+MU = GRAV * MASS / (1000*1000*1000)    
+G = 1371            # incident solar radiation [W/m^2] (G_Earth = 1371)
 
-COLOR = "#0088ff"
+COLOR = "#0066aa"
 NAME = "EARTH"
 
-def main():
+"""
+   @brief  class for animating the satellite orbit as defined by params
+   @param  figure handle
+   @param  axis handle
+   @param  the semi-major axis of the orbit [km]
+   @param  the semi-minor axis of the orbit [km]
+   @param  the (positive-x) focal point of the orbit [km]
+"""
+class panel:
+    # initialise the scenario
+    def __init__(self,
+                 fig=None, 
+                 ax=None,
+                 area=1,
+                 absorptivity=1,
+                 efficiency = 0.15,
+                 semiMajor=2*RADIUS, 
+                 semiMinor=2*RADIUS):
+        
+        # figures
+        self.fig = fig
+        self.orbitAx = ax[0]
+        self.powerAx = ax[1]
+        
+        # panel parameters
+        self.area = area
+        self.absorptivity = absorptivity
+        self.efficiency = efficiency
+        
+        # orbit parameters
+        self.semiMajor = semiMajor
+        self.semiMinor = semiMinor
+        
+        # get the orbital data (position, velocity, angle)
+        self.getOrbit()
+        
+        # central body
+        central = Ellipse([0,0], RADIUS*2, RADIUS*2, 
+                          linewidth=1, fill=1, color=COLOR)
+        
+        # satellite orbit, with the focus located at centre of central body
+        orbit = Ellipse([self.focus,0], self.semiMajor*2, self.semiMinor*2, 
+                        linewidth=1, fill=0, color='g')
+        
+        # size of the satellite and panel
+        self.satWidth = 2000
+        self.satHeight = 500
+        self.panelWidth = 1.5*self.satWidth
+        self.panelHeight = self.satHeight/2
+        
+        # satellite representation
+        self.satellite = Rectangle((0, 0), self.satWidth, self.satHeight, 
+                                   fc='w')
+        # solar panel representation for clearer visualisation
+        self.panel = Rectangle((0, 0), self.panelWidth, self.panelHeight, 
+                               fc='#EEA533')
+    
+        self.marker = Ellipse([0,0], 0.2, 0.2, 
+                              linewidth=1, fill=1, color='k')
+        
+        # plot the central body and the satellite orbit
+        self.orbitAx.add_artist(orbit)
+        self.orbitAx.add_artist(central)
+        
+        # list to keep all x,y coords of the orbit
+        self.xyPos = []
+    
+    # use the orbit definition to get the coords, angles, and speeds through orbit
+    def getOrbit(self):
+        self.X = [] # x position
+        self.Y = [] # y position
+        self.A = [] # angle
+        self.V = [] # velocity
+        self.speedScaling = []
+        
+        # distance from the centre of the orbit to the focus
+        self.focus = np.sqrt(self.semiMajor**2 - self.semiMinor**2)
+        # eccentricity of orbit
+        self.eccentricity = self.focus / self.semiMajor
+    
+        # perigee and apogee (orbital altitude, not radius)
+        self.perigee = self.semiMajor - self.focus - RADIUS # [km]
+        self.apogee = self.semiMajor + self.focus - RADIUS  # [km]
+    
+        # might be concerning if satellite is crashing into central body...
+        if self.perigee < 0:
+            plt.close()
+            sys.exit("Negative perigee. Exiting")
+            
+        # point of minimum radius (rMin) = point of maximum velocity (vMax) 
+        rMin = np.sqrt((self.semiMajor - self.focus)**2)
+        # v = sqrt(mu * (2/r - 1/a)) for an eliptical orbit
+        self.vMax = np.sqrt(MU * (2/rMin - 1/self.semiMajor))
+        
+        # orbital period = 2*pi*sqrt(a^3 / mu)
+        self.orbitalPeriod = 2 * np.pi * np.sqrt(self.semiMajor**3 / MU)
+        
+        for i in range(360):
+            # elipse is parameterised with x = semiMajor * sin (t), y = semiMinor * cos(t)
+            # and x is offset by the focal length
+            x = self.focus + self.semiMajor * np.sin(np.radians(i))
+            y = self.semiMinor * np.cos(np.radians(i))
+            
+            # distance between satellite centre and Earth centre at this point
+            r = np.sqrt(x**2 + y**2)   
+           
+            # angle between satellite and Earth centre at this point
+                # 0 radians corresponds to x-axis in this representation
+            theta = math.atan2(y,x)
+            
+            # calculate the tangential speed of the satellite at this point
+            vTangential = np.sqrt(MU * (2/r - 1/self.semiMajor))
+            
+            # normalise the speed against the point of maximum velocity
+            speed = vTangential/self.vMax
+            
+            self.X.append(x)
+            self.Y.append(y)
+            self.A.append(theta)           
+            self.V.append(speed)
+            self.speedScaling.append(10/self.V[i])
+            
+               
+        # use the orbital period to define the time points
+        self.time = np.cumsum([0] + self.speedScaling[:-1])
+        
+        scaleFactor = (self.orbitalPeriod/self.time[-1])/3600
+        self.time = [a*scaleFactor for a in self.time]
+        
+        #self.time = np.linspace(0,self.orbitalPeriod/3600,360)
+    
+    # use the orbital data to calculate the corresponding power output
+    def powerOutput(self, solarAngle):
+        # orbital angle is defined as 0 when panel faces positive x
+        # solar angle is defined in the same way
+        # when panel and rays are anti-paralled, maximum power
+        
+        self.powerOutput = []
+        
+        for i in range(360):
+            angle = -np.degrees(self.A[i])+180
+            
+            diff = angle + solarAngle 
+            
+            if diff > 180:
+                diff = -1*(360 - diff)
+            
+            if(abs(diff) < 90):
+                # radiation absorbed by a plate:
+                    # incident radiation * area * absorptivity * cos(angle)
+                absorbedPower =  G * self.area * self.absorptivity * np.cos(np.radians(diff))
+            else:
+                # one the solar panel is > 90 rotated relative to the 
+                    # incoming radiation, nothing can be absorbed
+                absorbedPower = 0
+            
+            powerOutput = (absorbedPower) * self.efficiency
+
+            self.powerOutput.append(powerOutput)
+        
+        # plot the power output of the array against the orbit timesteps
+        self.powerAx.plot(self.time, self.powerOutput, color='#666666')
+        
+        # change the size of the marker ellipse to be circular w.r.t the
+        # axis scaling
+        self.marker.width = max(self.time)/50
+        self.marker.height = max(self.powerOutput)/50   
+    
+    # initialise the animation by adding the patches to the plot
+    def init(self):
+        # add the satellite and panel to the figure
+        self.orbitAx.add_patch(self.satellite)
+        self.orbitAx.add_patch(self.panel)
+        self.powerAx.add_patch(self.marker)
+        return self.satellite,self.panel,self.marker,
+      
+    
+    # animation function for the satellite
+    def orbitAnimation(self, i):    
+        # change the speed of the animation to reflect the velocity changes
+            # x/speed means x is the shortest interval (i.e. lower x -> faster)
+        self.anim.event_source.interval = self.speedScaling[i]
+        
+        # move the satellite to the new point on the ellipse trajectory
+        self.satellite.set_xy([self.X[i] - self.satWidth/2, 
+                               self.Y[i] - self.satHeight/2])
+        # position the panel representation to the 'outside' of the satellite
+        self.panel.set_xy([self.X[i] - self.panelWidth/2, 
+                           self.Y[i] + self.satHeight/2])
+        
+        self.marker.set_center([self.time[i], self.powerOutput[i]])
+        
+        # get the axis transformation data and use this to transform to display coords
+        ts = self.orbitAx.transData
+        coords = ts.transform([self.X[i], self.Y[i]])
+        # perform a rotation relative to the axes of theta radians (calculated above)
+            # and then a further 90 degrees so the 'face' of the panels is away from Earth
+        tr = matplotlib.transforms.Affine2D().rotate_around(coords[0],coords[1], self.A[i] - np.pi/2)
+        t = ts + tr
+        
+        # perform the rotative transformation
+        self.satellite.set_transform(t)
+        self.panel.set_transform(t)
+        
+        return self.satellite,self.panel,self.marker,
+    
+    def animate(self):
+        # execute the animation
+        self.anim = animation.FuncAnimation(self.fig, self.orbitAnimation, 
+                                            init_func=self.init, 
+                                            frames=360, 
+                                            blit=True)
+        #self.anim.save(r'animation.gif', fps=10)
+    
+    
+def main():    
+    # semi-major (x-axis), semi-minor (y-axis) are used to define the orbit
+    semiMajorAxis = RADIUS + 5000 # [km]
+    semiMinorAxis = RADIUS + 5000 # [km]
+    
+    panelArea = 1               # area of the solar panel [m2]       
+    panelAbsorptivity = 0.5     # absorptivity of the solar panel []
+    panelEfficiency = 0.15      # efficiency of the solar panel
+    
+    # angle of the light rays from the sun. 0 -> | 180 <- | 90 ^
+    solarAngle = 50 # [degrees]
+    
     # change the backend to interactive (qt) so we can see animations
     try:
         import IPython
@@ -48,30 +276,68 @@ def main():
     except:
         pass 
     
-    rc('animation', html='html5')
-    
-    semiMajorAxis = 19000 # km
-    semiMinorAxis = 18000 # km
-    
-    solarAngle = 0
-    
-    # calculate the distance from the centre of the orbit to the focus
-    focus = np.sqrt(semiMajorAxis**2 - semiMinorAxis**2)
-    eccentricity = focus / semiMajorAxis
-    print(eccentricity)
-
     # create axes
-    fig, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
-    ax.set_facecolor((0, 0, 0))
+    fig, ax = plt.subplots(1, 2)
+    orbitAx = ax[0]
+    powerAx = ax[1]
+    
+    FS = 15 # font size for plots
+    
+    orbitAx.set_facecolor((0, 0, 0)) # black background
+    
+    # grid
+    orbitAx.grid()
+    powerAx.grid()
+    
+    #fig.set_dpi(100)
+    fig.set_size_inches(15, 8)
+    fig.tight_layout(pad=7.0)
+    
+    orbitAx.set_aspect('equal')
     
     # plot and animate the satellite orbit around earth
-    plotOrbit(fig, ax, semiMajorAxis,semiMinorAxis, focus)
-
+    solarPanel = panel(fig, ax, 
+                       panelArea, panelAbsorptivity, panelEfficiency,
+                       semiMajorAxis, semiMinorAxis)
+    
+    # titles
+    orbitAx.set_title("Perigee: {:.1f}km | Apogee: {:.1f}km".format(
+                       solarPanel.perigee, solarPanel.apogee),
+                       fontsize=FS)
+    powerAx.set_title("Power", fontsize=FS)
+    # labels
+    orbitAx.set_xlabel("[km]", fontsize = FS)
+    orbitAx.set_ylabel("[km]", fontsize = FS)
+    orbitAx.tick_params(axis='both', which='major', labelsize=FS)
+    powerAx.set_xlabel("Time [h]", fontsize = FS)
+    powerAx.set_ylabel("Power Output [W]", fontsize = FS)
+    powerAx.tick_params(axis='both', which='major', labelsize=FS)
+        
+    # make sure everything is visibile
+    orbitAx.set_xlim([-1.1*(solarPanel.focus + solarPanel.semiMajor), 
+                       1.1*(solarPanel.focus + solarPanel.semiMajor)])
+    orbitAx.set_ylim([-1.1*solarPanel.semiMinor, 
+                       1.1*solarPanel.semiMinor])
+    powerAx.set_xlim(0, max(solarPanel.time))
+    
     # plot arrows to represent the sun
-    plotSun(fig, ax, solarAngle)
+    plotSun(fig, orbitAx, solarAngle)
     
     plt.show()
 
+    solarPanel.powerOutput(solarAngle)
+    
+    # animate!
+    solarPanel.animate()
+
+
+
+"""
+   @brief  draw a set of arrows that represent the incoming solar rays
+   @param  figure handle
+   @param  axis handle
+   @param  the angle of the incoming solar rays [degrees] where 0: ->
+"""
 def plotSun(fig, ax, angle):
     # get the axis limits so we know what we're working with
     xLim = ax.get_xlim()
@@ -115,105 +381,8 @@ def plotSun(fig, ax, angle):
     for origin in rayOrigins:
         arrow = Arrow(origin[0], origin[1], 
                       -rayOrigins[0][0], -rayOrigins[0][1], 
-                      width = 3000, color='y', alpha = 0.5, zorder = 0)
+                      width = 3000, color='y', alpha = 0.5, zorder=10)
         ax.add_artist(arrow)
-
-"""
-   @brief  draw the earth and the orbit of satellite as defined by params
-   @param  the semi-major axis of the orbit
-   @param  the semi-minor axis of the orbit
-   @param  the (positive-x) focal point of the orbit
-"""
-def plotOrbit(fig, ax, semiMajor, semiMinor, focus):
-    # todo: animate the orbit - preferably keep the whole orbit visible 
-        # and have the point moving around the path
-    
-    # define earth
-    earth = Ellipse([0,0], RADIUS*2, RADIUS*2, angle=0, linewidth=1, fill=1, color=COLOR)
-    
-    # define satellite orbit, with the focus located at centre of earth
-        # todo: include an angle?
-    orbit = Ellipse([focus,0], semiMajor*2, semiMinor*2, angle=0, linewidth=1, fill=0, color='b')
-    
-    satWidth = 2000
-    satHeight = 500
-    
-    # define the satellite representation
-    satellite = Rectangle((0, 0), satWidth, satHeight, fc='w')
-    # define the solar panel representation so we can better visualise where it 
-        # is facing at all times
-    panel = Rectangle((0, 0), satWidth, satHeight/2, fc='#FFA500')
-
-    
-    # plot the earth and the satellite orbit
-    ax.add_artist(orbit)
-    ax.add_artist(earth)
-
-    # make sure everything is visibile
-    ax.set_xlim([-1.1*(focus + semiMajor), 1.1*(focus + semiMajor)])
-    ax.set_ylim([-1.1*semiMinor, 1.1*semiMinor])
-    ax.grid()
-    #fig.set_dpi(100)
-    #fig.set_size_inches(7, 6.5)
-    
-    rMin = np.sqrt((semiMajor - focus)**2)
-    vMax = np.sqrt(MU * (2/rMin - 1/semiMajor))
-    
-    # initialise the satellite animation
-    def init():
-        # add the satellite to the figure
-        ax.add_patch(satellite)
-        ax.add_patch(panel)
-        return satellite,panel,
-    
-    # animation function for the satellite
-    def animate(i):
-        # elipse is parameterised with x = semiMajor * sin (t), y = semiMinor * cos(t)
-        # and x is offset by the focal length
-        x = focus + semiMajor * np.sin(np.radians(i))
-        y = semiMinor * np.cos(np.radians(i))
-        
-        # distance between satellite centre and Earth centre at this point
-        r = np.sqrt(x**2 + y**2)   
-       
-        # angle between satellite and Earth centre at this point
-            # 0 radians corresponds to x-axis in this representation
-        theta = math.atan2(y,x)
-        
-        # calculate the tangential speed of the satellite at this point
-        vTangential = np.sqrt(MU * (2/r - 1/semiMajor))
-        
-        # normalise the speed against the point of maximum velocity
-        speed = vTangential/vMax
-    
-        # change the speed of the animation to reflect the velocity changes
-            # x/speed means x is the shortest interval (i.e. lower x -> faster)
-        anim.event_source.interval = 15/speed
-        
-        # move the satellite to the new point on the ellipse trajectory
-        satellite.set_xy([x - satWidth/2, y - satHeight/2])
-        # position the panel representation to the 'outside' of the satellite
-        panel.set_xy([x - satWidth/2, y + satHeight/2])
-        
-        # get the axis transformation data and use this to transform to display coords
-        ts = ax.transData
-        coords = ts.transform([x,y])
-        # perform a rotation relative to the axes of theta radians (calculated above)
-            # and then a further 90 degrees so the 'face' of the panels is away from Earth
-        tr = matplotlib.transforms.Affine2D().rotate_around(coords[0],coords[1], theta - np.pi/2)
-        t = ts + tr
-        
-        # perform the rotative transformation
-        satellite.set_transform(t)
-        panel.set_transform(t)
-        
-        return satellite,panel,
-        
-    # execute the animation
-    anim = animation.FuncAnimation(fig, animate, 
-                                   init_func=init, 
-                                   frames=360, 
-                                   blit=True)
 
 if __name__ == "__main__":
     main()

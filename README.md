@@ -16,6 +16,11 @@ This implementation uses Python to plot an orbit around the Earth as defined by 
 - The solar panel has only one face covered by solar cells
 - The side of the solar panel with solar cells is always zenith-pointing
 - The mass of the solar panel is negligible compared to the mass of the central body
+- The back side of the solar panel is perfectly insulated
+- The solar panel efficiency is constant over time
+- The solar panel has constant absorptivity for all wavelengths of light
 - The gravitational influence of all bodies other than the central body is negligible
 - The central body is assumed to be a perfectly homogeneous circle (i.e. the body can be assumed to have a centre of mass coincident with the centre of the body)
 - The sun is distant enough for the ray lines to be considered parallel
+- The sun is the only source of radiation incident on the solar panel
+- The solar panel is orbiting with an inclination of 0 degrees (i.e. the orbital plane is coincident with the central body's equatorial plane)
