@@ -26,7 +26,7 @@ A figure will then pop up which will have the orbit around the central body draw
 
 <a name="assumptions">
 
-# 2. Simplifying Assumptions
+# 3. Simplifying Assumptions
 - The solar panel has only one face covered by solar cells
 - The side of the solar panel with solar cells is always zenith-pointing
 - The mass of the solar panel is negligible compared to the mass of the central body
