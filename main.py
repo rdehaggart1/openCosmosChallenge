@@ -27,6 +27,9 @@ import numpy as np
 # for system exit control
 import sys
 
+from tkinter import *
+#from tkinter import Tk, Label
+
 # GLOBAL CONSTANTS
 # If we wanted a different central body, we could change these or create
     # a set of classes for different bodies
@@ -43,17 +46,6 @@ MU = GRAV * MASS / (1000*1000*1000)
 
 
 def main():    
-    # semi-major (x-axis), semi-minor (y-axis) are used to define the orbit
-    semiMajorAxis = RADIUS + 5000 # [km]
-    semiMinorAxis = RADIUS + 5000 # [km]
-    
-    panelArea = 1               # area of the solar panel [m2]       
-    panelAbsorptivity = 0.5     # absorptivity of the solar panel []
-    panelEfficiency = 0.15      # efficiency of the solar panel
-    
-    # angle of the light rays from the sun. 0 -> | 180 <- | 90 ^
-    solarAngle = 50 # [degrees]
-    
     # change the backend to interactive (qt) so we can see animations
     try:
         import IPython
@@ -62,7 +54,80 @@ def main():
     except:
         pass 
     
-    # create axes
+    # round the central body radius up to nearest 1000
+    roundedRadius = math.ceil(RADIUS/500)*500
+    
+    # create a tkinter GUI window
+    window = Tk()
+
+    # semi-major axis slider
+    semiMajorLabel = Label(text="Semi-major Axis [km]")
+    semiMajorLabel.pack()
+    semiMajorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5, 
+                            length=600, tickinterval=2000, resolution=100, orient=HORIZONTAL)
+    semiMajorSlider.pack()
+    semiMajorSlider.set(2*roundedRadius)
+    
+    # semi-minor axis slider
+    semiMinorLabel = Label(text="Semi-minor Axis [km]")
+    semiMinorLabel.pack()
+    semiMinorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5,
+                            length=600, tickinterval=2000, resolution=100, orient=HORIZONTAL)
+    semiMinorSlider.pack()
+    semiMinorSlider.set(2*roundedRadius)
+    
+    # panel area value entry
+    panelAreaLabel = Label(text="Solar Panel Surface Area [m2]")
+    panelAreaLabel.pack()
+    panelAreaEntry = Entry()
+    panelAreaEntry.pack()
+    panelAreaEntry.insert(0, "1")
+    
+    # solar panel absorptivity slider
+    panelAbsorptivityLabel = Label(text="Solar Panel Absorptivity")
+    panelAbsorptivityLabel.pack()
+    panelAbsorptivitySlider = Scale(window, from_=0, to_=1,
+                            length=600, tickinterval=0.1, resolution=0.05, orient=HORIZONTAL)
+    panelAbsorptivitySlider.pack()
+    panelAbsorptivitySlider.set(0.5)
+    
+    # solar panel efficiency slider
+    panelEfficiencyLabel = Label(text="Solar Panel Efficiency [%]")
+    panelEfficiencyLabel.pack()
+    panelEfficiencySlider = Scale(window, from_=0, to_=100,
+                            length=600, tickinterval=10, resolution=1, orient=HORIZONTAL)
+    panelEfficiencySlider.pack()   
+    panelEfficiencySlider.set(15)
+    
+    solarAngleLabel = Label(text="Angle of Incident Solar Rays [°]")
+    solarAngleLabel.pack()
+    solarAngleSlider = Scale(window, from_=-90, to_=90,
+                            length=600, tickinterval=10, resolution=1, orient=HORIZONTAL)
+    solarAngleSlider.pack() 
+    
+    
+    startButton = Button(window, text="START", command = lambda:  execute(window,
+                                                                          semiMajorSlider.get(),
+                                                                          semiMinorSlider.get(),
+                                                                          float(panelAreaEntry.get()),
+                                                                          panelAbsorptivitySlider.get(),
+                                                                          panelEfficiencySlider.get(),
+                                                                          solarAngleSlider.get()))
+
+    startButton.pack()
+    window.mainloop()
+
+def execute(window,
+            semiMajorAxis, 
+            semiMinorAxis, 
+            panelArea, 
+            panelAbsorptivity, 
+            panelEfficiency, 
+            solarAngle):
+    
+    window.destroy()
+    
+    # create axes    
     fig, ax = plt.subplots(1, 2)
     orbitAx = ax[0]
     powerAx = ax[1]
@@ -119,7 +184,7 @@ def main():
     
     # animate!
     solarPanel.animate()
-
+    
 """
    @brief  class structure for the solar panel. plot orbit & power out, and animate
    @param  figure handle
@@ -202,7 +267,11 @@ class panel:
         # perigee and apogee (orbital altitude, not radius)
         self.perigee = self.semiMajor - self.focus - RADIUS # [km]
         self.apogee = self.semiMajor + self.focus - RADIUS  # [km]
-    
+        
+        if(self.semiMajor < self.semiMinor):
+            plt.close()
+            sys.exit("Semi-minor axis cannot be greater than semi-major axis. Exiting")
+        
         # might be concerning if satellite is crashing into central body...
         if self.perigee < 0:
             plt.close()
