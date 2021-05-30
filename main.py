@@ -7,10 +7,9 @@ Created on Sat May 29 08:37:34 2021
 """
 
 #TODO:
-    # create a dashboard type thing that allows for variable parameters
     # print velocty? altitude?
     # add support for solar angles in RHP
-    # add support for re-drawing when a parameter changes
+    # tidy up gui (spacing, format etc)
     
 # for plotting purposes
 import matplotlib.pyplot as plt
@@ -27,8 +26,8 @@ import numpy as np
 # for system exit control
 import sys
 
-from tkinter import *
-#from tkinter import Tk, Label
+# for GUI which is used for input of parameters
+from tkinter import Tk, Label, Scale, Entry, Button
 
 # GLOBAL CONSTANTS
 # If we wanted a different central body, we could change these or create
@@ -54,69 +53,107 @@ def main():
     except:
         pass 
     
+    launchGUI()
+
+"""
+   @brief  launch the tkinter GUI to be used for parameter selection
+"""
+def launchGUI():
     # round the central body radius up to nearest 1000
     roundedRadius = math.ceil(RADIUS/500)*500
+
+    FS = 15
     
     # create a tkinter GUI window
     window = Tk()
+    window.title("Setup")
 
     # semi-major axis slider
-    semiMajorLabel = Label(text="Semi-major Axis [km]")
+    semiMajorLabel = Label(text="Semi-major Axis [km]",font=("Courier", FS))
     semiMajorLabel.pack()
     semiMajorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5, 
-                            length=600, tickinterval=2000, resolution=100, orient=HORIZONTAL)
+                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
     semiMajorSlider.pack()
     semiMajorSlider.set(2*roundedRadius)
     
+    blank = Label(text="   ")
+    blank.pack()
+    
     # semi-minor axis slider
-    semiMinorLabel = Label(text="Semi-minor Axis [km]")
+    semiMinorLabel = Label(text="Semi-minor Axis [km]",font=("Courier", FS))
     semiMinorLabel.pack()
     semiMinorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5,
-                            length=600, tickinterval=2000, resolution=100, orient=HORIZONTAL)
+                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
     semiMinorSlider.pack()
     semiMinorSlider.set(2*roundedRadius)
     
+    blank = Label(text="   ")
+    blank.pack()    
+
     # panel area value entry
-    panelAreaLabel = Label(text="Solar Panel Surface Area [m2]")
+    panelAreaLabel = Label(text="Solar Panel Surface Area [m2]",font=("Courier", FS))
     panelAreaLabel.pack()
     panelAreaEntry = Entry()
     panelAreaEntry.pack()
     panelAreaEntry.insert(0, "1")
     
+    blank = Label(text="   ")
+    blank.pack()
+    
     # solar panel absorptivity slider
-    panelAbsorptivityLabel = Label(text="Solar Panel Absorptivity")
+    panelAbsorptivityLabel = Label(text="Solar Panel Absorptivity",font=("Courier", FS))
     panelAbsorptivityLabel.pack()
     panelAbsorptivitySlider = Scale(window, from_=0, to_=1,
-                            length=600, tickinterval=0.1, resolution=0.05, orient=HORIZONTAL)
+                            length=600, tickinterval=0.1, resolution=0.05, orient='horizontal')
     panelAbsorptivitySlider.pack()
     panelAbsorptivitySlider.set(0.5)
-    
+
+    blank = Label(text="   ")
+    blank.pack()
+
     # solar panel efficiency slider
-    panelEfficiencyLabel = Label(text="Solar Panel Efficiency [%]")
+    panelEfficiencyLabel = Label(text="Solar Panel Efficiency [%]",font=("Courier", FS))
     panelEfficiencyLabel.pack()
     panelEfficiencySlider = Scale(window, from_=0, to_=100,
-                            length=600, tickinterval=10, resolution=1, orient=HORIZONTAL)
+                            length=600, tickinterval=10, resolution=1, orient='horizontal')
     panelEfficiencySlider.pack()   
     panelEfficiencySlider.set(15)
-    
-    solarAngleLabel = Label(text="Angle of Incident Solar Rays [°]")
+
+    blank = Label(text="   ")
+    blank.pack()
+
+    solarAngleLabel = Label(text="Angle of Incident Solar Rays [deg]",font=("Courier", FS))
     solarAngleLabel.pack()
-    solarAngleSlider = Scale(window, from_=-90, to_=90,
-                            length=600, tickinterval=10, resolution=1, orient=HORIZONTAL)
+    solarAngleSlider = Scale(window, from_=-180, to_=180,
+                            length=600, tickinterval=10, resolution=1, orient='horizontal')
     solarAngleSlider.pack() 
     
-    
-    startButton = Button(window, text="START", command = lambda:  execute(window,
-                                                                          semiMajorSlider.get(),
-                                                                          semiMinorSlider.get(),
-                                                                          float(panelAreaEntry.get()),
-                                                                          panelAbsorptivitySlider.get(),
-                                                                          panelEfficiencySlider.get(),
-                                                                          solarAngleSlider.get()))
+    blank = Label(text="   ")
+    blank.pack()
+
+    startButton = Button(window, text="START", height=10, width=30,
+                         font=("Courier", 40),bg='#dd4400',fg='#ffffff', 
+                         command = lambda:  execute(window,
+                                                    semiMajorSlider.get(),
+                                                    semiMinorSlider.get(),
+                                                    float(panelAreaEntry.get()),
+                                                    panelAbsorptivitySlider.get(),
+                                                    panelEfficiencySlider.get(),
+                                                    solarAngleSlider.get()))
 
     startButton.pack()
     window.mainloop()
 
+"""
+   @brief  main task execution wrapper
+   @param  GUI window
+   @param  orbit semi-major axis [km]
+   @param  orbit semi-minor axis [km]
+   @param  solar panel area [m2]
+   @param  absoption coefficient of the solar panel
+   @param  efficiency of the solar panel
+   @param  angle of the incoming solar radiation
+"""
 def execute(window,
             semiMajorAxis, 
             semiMinorAxis, 
@@ -175,15 +212,15 @@ def execute(window,
     
     # plot arrows to represent the solar rays
     plotSun(fig, orbitAx, solarAngle)
-    
-    # show our plot
-    plt.show()
 
     # calculate and plot the power output from the solar panel
     solarPanel.powerOutput(solarAngle)
     
     # animate!
     solarPanel.animate()
+
+    # show our plot
+    plt.show()
     
 """
    @brief  class structure for the solar panel. plot orbit & power out, and animate
@@ -437,7 +474,8 @@ def plotSun(fig, ax, angle):
     
     raySep = 10000
     
-    if angle > 0:
+    # need to perform slightly different positioning calculations based on angle
+    if (angle >= 0 and angle <= 90) or angle < -90:
         # a gradient value to maintain separation between each ray
         gradient = 1+(rayOrigins[0][1] / rayOrigins[0][0])
             
@@ -448,7 +486,7 @@ def plotSun(fig, ax, angle):
         # find the origins of the other light rays
         rayOrigins[1] = (rayOrigins[0][0] - raySepX, rayOrigins[0][1] + raySepY) 
         rayOrigins[2] = (rayOrigins[0][0] + raySepX, rayOrigins[0][1] - raySepY) 
-    else:
+    elif (angle < 0 and angle >= -90) or angle > 90:
         # a gradient value to maintain separation between each ray
         gradient = 1-(rayOrigins[0][1] / rayOrigins[0][0])
             
@@ -459,7 +497,7 @@ def plotSun(fig, ax, angle):
         # find the origins of the other light rays
         rayOrigins[1] = (rayOrigins[0][0] - raySepX, rayOrigins[0][1] - raySepY) 
         rayOrigins[2] = (rayOrigins[0][0] + raySepX, rayOrigins[0][1] + raySepY) 
-    
+        
     # plot the light rays
     for origin in rayOrigins:
         arrow = Arrow(origin[0], origin[1], 

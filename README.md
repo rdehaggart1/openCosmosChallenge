@@ -3,12 +3,26 @@ Considering a flat solar panel orbiting around the Earth, this Python code model
 
 This implementation uses Python to plot an orbit around the Earth as defined by the user in terms of semi-major and semi-minor axes. The solar panel is animated to follow the plotted orbital trajectory, and to maintain it's zenith-pointing attitude (see [assumptions](#assumptions)). 
 
-- [1. Usage](#usage)
-- [2. Simplifying Assumptions](#assumptions)
+- [1. Installation](#install)
+- [2. Usage](#usage)
+- [3. Simplifying Assumptions](#assumptions)
 
+<a name="install">
+
+# 1. Installation
+Move to the directory that you would like this repository to live in, open a new terminal and run the following:
+```
+git clone https://github.com/rdehaggart1/openCosmosChallenge.git
+```
 <a name="usage">
 
-# 1. Usage
+# 2. Usage 
+From within the local repository, open a terminal and run the following:
+```
+python3 main.py
+```
+This will open a <b>setup</b> window which will allow you to tune various parameters of the solar panel and it's orbit. Once you are happy with the selected parameters, click the <b>start</b> button at the bottom of this winddow to begin the simulation. 
+A figure will then pop up which will have the orbit around the central body drawn on the left, and the power output of the solar panel drawn on the right. The plots will be animated to allow for better visualisation of how the state changes over time.
 
 <a name="assumptions">
 
