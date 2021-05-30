@@ -30,10 +30,11 @@ A figure will then pop up which will have the orbit around the central body draw
 # 3. Simplifying Assumptions
 - The solar panel has only one face covered by solar cells
 - The side of the solar panel with solar cells is always zenith-pointing
-- The mass of the solar panel is negligible compared to the mass of the central body
 - The back side of the solar panel is perfectly insulated
-- The solar panel efficiency is constant over time
+- The solar panel efficiency doesn't decrease with age
 - The solar panel has constant absorptivity for all wavelengths of light
+- The effects of atmospheric drag and solar pressure on the solar panel are negligible
+- The mass of the solar panel is negligible compared to the mass of the central body
 - The gravitational influence of all bodies other than the central body is negligible
 - The central body is assumed to be a perfectly homogeneous circle (i.e. the body can be assumed to have a centre of mass coincident with the centre of the body)
 - The sun is distant enough for the ray lines to be considered parallel
