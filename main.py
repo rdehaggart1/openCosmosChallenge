@@ -7,9 +7,10 @@ Created on Sat May 29 08:37:34 2021
 """
 
 #TODO:
-    # print velocty? altitude?
-    # add support for solar angles in RHP
-    # tidy up gui (spacing, format etc)
+    # print velocty? altitude? etc. during the orbit
+    # intuitively it makes more sense to me to define apopapsis/periapsis
+        # rather than semi-major/semi-minor axes - maybe worth switching
+    # add support for other planets and a radio button selection on the GUI
     
 # for plotting purposes
 import matplotlib.pyplot as plt
