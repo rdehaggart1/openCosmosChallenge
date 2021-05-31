@@ -142,7 +142,7 @@ def launchGUI():
                          command = lambda:  startButtonCallback(window,
                                                 semiMajorSlider.get(),
                                                 semiMinorSlider.get(),
-                                                float(panelAreaEntry.get()),
+                                                panelAreaEntry.get(),
                                                 panelAbsorptivitySlider.get(),
                                                 panelEfficiencySlider.get(),
                                                 solarAngleSlider.get()))
@@ -169,6 +169,12 @@ def startButtonCallback(window,
             solarAngle):
     
     window.destroy()
+    
+    try:
+        panelArea = float(panelArea)
+    except:
+        sys.exit("Non-numeric panel area entered. Exiting")
+        
     
     # create axes    
     fig, ax = plt.subplots(1, 2)
