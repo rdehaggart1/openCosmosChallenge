@@ -14,6 +14,16 @@ Move to the directory that you would like this repository to live in, open a new
 ```
 git clone https://github.com/rdehaggart1/openCosmosChallenge.git
 ```
+
+## Non-standard Libraries
+The libraries used in this project are `matplotlib`, `math`, `numpy`, `sys` and `tkinter`. Of these, [`matplotlib`](https://matplotlib.org/) and [`numpy`](https://numpy.org/) are 'non-standard' libraries (i.e. not necessarily part of the Python distribution). They have been included for plotting and numerical manipulation purposes respectively. Whilst non-standard, these libraries are commonly used in the community and may already be installed on your machine. If this is not the case, they can be retrieved using [pip](https://pypi.org/project/pip/) (Pythons package installer) by running the following commands in your terminal:
+```
+pip install matplotlib
+```
+```
+pip install numpy
+```
+
 <a name="usage">
 
 # 2. Usage 
