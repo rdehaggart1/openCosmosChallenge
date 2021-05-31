@@ -46,110 +46,6 @@ G = 1371            # incident solar radiation [W/m^2] (G_Earth = 1371)
 MU = GRAV * MASS / (1000*1000*1000)  
 
 
-def main():    
-    # change the backend to interactive (qt) so we can see animations
-    try:
-        import IPython
-        shell = IPython.get_ipython()
-        shell.enable_matplotlib(gui='qt')
-    except:
-        pass 
-    
-    # launch the GUI so the user can configure the simulation
-    launchGUI()
-
-"""
-   @brief  launch the tkinter GUI to be used for parameter selection
-"""
-def launchGUI():
-    # round the central body radius up to nearest 1000
-    roundedRadius = math.ceil(RADIUS/500)*500
-
-    FS = 15
-    
-    # create a tkinter GUI window
-    window = Tk()
-    window.title("Setup")
-
-    # semi-major axis slider
-    semiMajorLabel = Label(text="Semi-major Axis [km]",font=("Courier", FS))
-    semiMajorLabel.pack()
-    semiMajorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5, 
-                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
-    semiMajorSlider.pack()
-    semiMajorSlider.set(2*roundedRadius)
-    
-    # blank entry to distance the elements a bit
-    blank = Label(text="   ")
-    blank.pack()
-    
-    # semi-minor axis slider
-    semiMinorLabel = Label(text="Semi-minor Axis [km]",font=("Courier", FS))
-    semiMinorLabel.pack()
-    semiMinorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5,
-                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
-    semiMinorSlider.pack()
-    semiMinorSlider.set(2*roundedRadius)
-    
-    blank = Label(text="   ")
-    blank.pack()    
-
-    # panel area value entry
-    panelAreaLabel = Label(text="Solar Panel Surface Area [m2]",font=("Courier", FS))
-    panelAreaLabel.pack()
-    panelAreaEntry = Entry()
-    panelAreaEntry.pack()
-    panelAreaEntry.insert(0, "1")
-    
-    blank = Label(text="   ")
-    blank.pack()
-    
-    # solar panel absorptivity slider
-    panelAbsorptivityLabel = Label(text="Solar Panel Absorptivity",font=("Courier", FS))
-    panelAbsorptivityLabel.pack()
-    panelAbsorptivitySlider = Scale(window, from_=0, to_=1,
-                            length=600, tickinterval=0.1, resolution=0.05, orient='horizontal')
-    panelAbsorptivitySlider.pack()
-    panelAbsorptivitySlider.set(0.5)
-
-    blank = Label(text="   ")
-    blank.pack()
-
-    # solar panel efficiency slider
-    panelEfficiencyLabel = Label(text="Solar Panel Efficiency [%]",font=("Courier", FS))
-    panelEfficiencyLabel.pack()
-    panelEfficiencySlider = Scale(window, from_=0, to_=100,
-                            length=600, tickinterval=10, resolution=1, orient='horizontal')
-    panelEfficiencySlider.pack()   
-    panelEfficiencySlider.set(15)
-
-    blank = Label(text="   ")
-    blank.pack()
-    
-    # slider for the angle of incoming solar rays
-    solarAngleLabel = Label(text="Angle of Incident Solar Rays [deg]",font=("Courier", FS))
-    solarAngleLabel.pack()
-    solarAngleSlider = Scale(window, from_=-180, to_=180,
-                            length=600, tickinterval=10, resolution=1, orient='horizontal')
-    solarAngleSlider.pack() 
-    
-    blank = Label(text="   ")
-    blank.pack()
-    
-    # button to start execution of main tasks - associated with callback func
-    startButton = Button(window, text="START", height=10, width=30,
-                         font=("Courier", 40),bg='#dd4400',fg='#ffffff', 
-                         command = lambda:  startButtonCallback(window,
-                                                semiMajorSlider.get(),
-                                                semiMinorSlider.get(),
-                                                panelAreaEntry.get(),
-                                                panelAbsorptivitySlider.get(),
-                                                panelEfficiencySlider.get(),
-                                                solarAngleSlider.get()))
-
-    startButton.pack()
-    window.mainloop()
-
 """
    @brief  callback function for the start button in GUI. main execution
    @param  GUI window
@@ -160,13 +56,13 @@ def launchGUI():
    @param  efficiency of the solar panel
    @param  angle of the incoming solar radiation
 """
-def startButtonCallback(window,
-            semiMajorAxis, 
-            semiMinorAxis, 
-            panelArea, 
-            panelAbsorptivity, 
-            panelEfficiency, 
-            solarAngle):
+def main(window,
+        semiMajorAxis, 
+        semiMinorAxis, 
+        panelArea, 
+        panelAbsorptivity, 
+        panelEfficiency, 
+        solarAngle):
     
     window.destroy()
     
@@ -528,5 +424,108 @@ def plotSun(fig, ax, angle):
                       width = 3000, color='y', alpha = 0.5, zorder=10)
         ax.add_artist(arrow)
 
+"""
+   @brief  launch the tkinter GUI to be used for parameter selection
+"""
+def launchGUI():
+    # round the central body radius up to nearest 1000
+    roundedRadius = math.ceil(RADIUS/500)*500
+
+    FS = 15
+    
+    # create a tkinter GUI window
+    window = Tk()
+    window.title("Setup")
+
+    # semi-major axis slider
+    semiMajorLabel = Label(text="Semi-major Axis [km]",font=("Courier", FS))
+    semiMajorLabel.pack()
+    semiMajorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5, 
+                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
+    semiMajorSlider.pack()
+    semiMajorSlider.set(2*roundedRadius)
+    
+    # blank entry to distance the elements a bit
+    blank = Label(text="   ")
+    blank.pack()
+    
+    # semi-minor axis slider
+    semiMinorLabel = Label(text="Semi-minor Axis [km]",font=("Courier", FS))
+    semiMinorLabel.pack()
+    semiMinorSlider = Scale(window, from_=roundedRadius, to=roundedRadius*5,
+                            length=600, tickinterval=2000, resolution=100, orient='horizontal')
+    semiMinorSlider.pack()
+    semiMinorSlider.set(2*roundedRadius)
+    
+    blank = Label(text="   ")
+    blank.pack()    
+
+    # panel area value entry
+    panelAreaLabel = Label(text="Solar Panel Surface Area [m2]",font=("Courier", FS))
+    panelAreaLabel.pack()
+    panelAreaEntry = Entry()
+    panelAreaEntry.pack()
+    panelAreaEntry.insert(0, "1")
+    
+    blank = Label(text="   ")
+    blank.pack()
+    
+    # solar panel absorptivity slider
+    panelAbsorptivityLabel = Label(text="Solar Panel Absorptivity",font=("Courier", FS))
+    panelAbsorptivityLabel.pack()
+    panelAbsorptivitySlider = Scale(window, from_=0, to_=1,
+                            length=600, tickinterval=0.1, resolution=0.05, orient='horizontal')
+    panelAbsorptivitySlider.pack()
+    panelAbsorptivitySlider.set(0.5)
+
+    blank = Label(text="   ")
+    blank.pack()
+
+    # solar panel efficiency slider
+    panelEfficiencyLabel = Label(text="Solar Panel Efficiency [%]",font=("Courier", FS))
+    panelEfficiencyLabel.pack()
+    panelEfficiencySlider = Scale(window, from_=0, to_=100,
+                            length=600, tickinterval=10, resolution=1, orient='horizontal')
+    panelEfficiencySlider.pack()   
+    panelEfficiencySlider.set(15)
+
+    blank = Label(text="   ")
+    blank.pack()
+    
+    # slider for the angle of incoming solar rays
+    solarAngleLabel = Label(text="Angle of Incident Solar Rays [deg]",font=("Courier", FS))
+    solarAngleLabel.pack()
+    solarAngleSlider = Scale(window, from_=-180, to_=180,
+                            length=600, tickinterval=10, resolution=1, orient='horizontal')
+    solarAngleSlider.pack() 
+    
+    blank = Label(text="   ")
+    blank.pack()
+    
+    # button to start execution of main tasks - associated with callback func
+    startButton = Button(window, text="START", height=10, width=30,
+                         font=("Courier", 40),bg='#dd4400',fg='#ffffff', 
+                         command = lambda:  main(window,
+                                                 semiMajorSlider.get(),
+                                                 semiMinorSlider.get(),
+                                                 panelAreaEntry.get(),
+                                                 panelAbsorptivitySlider.get(),
+                                                 panelEfficiencySlider.get(),
+                                                 solarAngleSlider.get()))
+
+    startButton.pack()
+    window.mainloop()
+
+# high level startup process
 if __name__ == "__main__":
-    main()
+    # change the backend to interactive (qt) so we can see animations
+    try:
+        import IPython
+        shell = IPython.get_ipython()
+        shell.enable_matplotlib(gui='qt')
+    except:
+        pass 
+    
+    # launch the GUI so the user can configure the simulation
+    launchGUI()
+
