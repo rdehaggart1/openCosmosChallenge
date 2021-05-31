@@ -12,13 +12,14 @@ Created on Sat May 29 08:37:34 2021
         # rather than semi-major/semi-minor axes - maybe worth switching
     # add support for other planets and a radio button selection on the GUI
     
-# for plotting purposes
+# basic plotting
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-from matplotlib.patches import Rectangle
-from matplotlib.patches import Arrow
+# animated plotting
 from matplotlib import animation
-import matplotlib
+# shapes for drawing
+from matplotlib.patches import Ellipse, Rectangle, Arrow
+# coordinate transformations
+from matplotlib import transforms
 
 # for manipulation of data
 import math
@@ -33,7 +34,7 @@ from tkinter import Tk, Label, Scale, Entry, Button
 # GLOBAL CONSTANTS
 # If we wanted a different central body, we could change these or create
     # a set of classes for different bodies
-COLOR = "#0066aa"
+COLOR = "#113377"
 NAME = "EARTH"
 
 RADIUS = 6371       # radius of parent [km] (R_Earth = 6371)
@@ -54,6 +55,7 @@ def main():
     except:
         pass 
     
+    # launch the GUI so the user can configure the simulation
     launchGUI()
 
 """
@@ -77,6 +79,7 @@ def launchGUI():
     semiMajorSlider.pack()
     semiMajorSlider.set(2*roundedRadius)
     
+    # blank entry to distance the elements a bit
     blank = Label(text="   ")
     blank.pack()
     
@@ -122,7 +125,8 @@ def launchGUI():
 
     blank = Label(text="   ")
     blank.pack()
-
+    
+    # slider for the angle of incoming solar rays
     solarAngleLabel = Label(text="Angle of Incident Solar Rays [deg]",font=("Courier", FS))
     solarAngleLabel.pack()
     solarAngleSlider = Scale(window, from_=-180, to_=180,
@@ -131,22 +135,23 @@ def launchGUI():
     
     blank = Label(text="   ")
     blank.pack()
-
+    
+    # button to start execution of main tasks - associated with callback func
     startButton = Button(window, text="START", height=10, width=30,
                          font=("Courier", 40),bg='#dd4400',fg='#ffffff', 
-                         command = lambda:  execute(window,
-                                                    semiMajorSlider.get(),
-                                                    semiMinorSlider.get(),
-                                                    float(panelAreaEntry.get()),
-                                                    panelAbsorptivitySlider.get(),
-                                                    panelEfficiencySlider.get(),
-                                                    solarAngleSlider.get()))
+                         command = lambda:  startButtonCallback(window,
+                                                semiMajorSlider.get(),
+                                                semiMinorSlider.get(),
+                                                float(panelAreaEntry.get()),
+                                                panelAbsorptivitySlider.get(),
+                                                panelEfficiencySlider.get(),
+                                                solarAngleSlider.get()))
 
     startButton.pack()
     window.mainloop()
 
 """
-   @brief  main task execution wrapper
+   @brief  callback function for the start button in GUI. main execution
    @param  GUI window
    @param  orbit semi-major axis [km]
    @param  orbit semi-minor axis [km]
@@ -155,7 +160,7 @@ def launchGUI():
    @param  efficiency of the solar panel
    @param  angle of the incoming solar radiation
 """
-def execute(window,
+def startButtonCallback(window,
             semiMajorAxis, 
             semiMinorAxis, 
             panelArea, 
@@ -170,6 +175,34 @@ def execute(window,
     orbitAx = ax[0]
     powerAx = ax[1]
     
+    # get panel orbit data and plot
+    solarPanel = panel(fig, ax, 
+                       panelArea, panelAbsorptivity, panelEfficiency,
+                       semiMajorAxis, semiMinorAxis)
+    
+    # configure the figure (titles, labels, limits, etc.)
+    plotConfig(fig, orbitAx, powerAx, solarPanel)
+    
+    # plot some arrows to represent the solar rays
+    plotSun(fig, orbitAx, solarAngle)
+
+    # calculate and plot the power output from the solar panel
+    solarPanel.powerOutput(solarAngle)
+    
+    # animate!
+    solarPanel.animate()
+
+    # show our plot
+    plt.show()
+
+"""
+   @brief  configure the plot axes, titles, labels, etc.
+   @param  figure handle
+   @param  orbit axis handle
+   @param  power axis handle
+   @param  solar panel object
+"""
+def plotConfig(fig, orbitAx, powerAx, solarPanel):
     FS = 15 # font size for plots
     
     orbitAx.set_facecolor((0, 0, 0)) # black background
@@ -185,11 +218,6 @@ def execute(window,
     # make sure out central body is actually shown as a circle
     orbitAx.set_aspect('equal')
     
-    # plot and animate the satellite orbit around earth
-    solarPanel = panel(fig, ax, 
-                       panelArea, panelAbsorptivity, panelEfficiency,
-                       semiMajorAxis, semiMinorAxis)
-    
     # titles
     orbitAx.set_title("Perigee: {:.1f}km | Apogee: {:.1f}km".format(
                        solarPanel.perigee, solarPanel.apogee),
@@ -201,7 +229,7 @@ def execute(window,
     orbitAx.set_ylabel("[km]", fontsize = FS)
     orbitAx.tick_params(axis='both', which='major', labelsize=FS)
     powerAx.set_xlabel("Time [h]", fontsize = FS)
-    powerAx.set_ylabel("Power Output [W]", fontsize = FS)
+    powerAx.set_ylabel("Power Output [kW]", fontsize = FS)
     powerAx.tick_params(axis='both', which='major', labelsize=FS)
         
     # make sure everything is visibile
@@ -210,18 +238,6 @@ def execute(window,
     orbitAx.set_ylim([-1.1*solarPanel.semiMinor, 
                        1.1*solarPanel.semiMinor])
     powerAx.set_xlim(0, max(solarPanel.time))
-    
-    # plot arrows to represent the solar rays
-    plotSun(fig, orbitAx, solarAngle)
-
-    # calculate and plot the power output from the solar panel
-    solarPanel.powerOutput(solarAngle)
-    
-    # animate!
-    solarPanel.animate()
-
-    # show our plot
-    plt.show()
     
 """
    @brief  class structure for the solar panel. plot orbit & power out, and animate
@@ -262,7 +278,7 @@ class panel:
         
         # central body
         central = Ellipse([0,0], RADIUS*2, RADIUS*2, 
-                          linewidth=1, fill=1, color=COLOR)
+                          linewidth=3, fill=1, facecolor=COLOR, edgecolor=[1,1,1,0.5])
         
         # satellite orbit, with the focus located at centre of central body
         orbit = Ellipse([self.focus,0], self.semiMajor*2, self.semiMinor*2, 
@@ -392,7 +408,7 @@ class panel:
                 absorbedPower = 0
             
             # then the power output is the input * efficiency
-            powerOutput = (absorbedPower) * self.efficiency
+            powerOutput = (absorbedPower) * self.efficiency / 1000
             self.powerOutput.append(powerOutput)
         
         # plot the power output of the array against the orbit timesteps
@@ -433,7 +449,7 @@ class panel:
         coords = ts.transform([self.X[i], self.Y[i]])
         # perform a rotation relative to the axes of theta radians (calculated above)
             # and then a further 90 degrees so the 'face' of the panels is away from Earth
-        tr = matplotlib.transforms.Affine2D().rotate_around(coords[0],coords[1], self.A[i] - np.pi/2)
+        tr = transforms.Affine2D().rotate_around(coords[0],coords[1], self.A[i] - np.pi/2)
         t = ts + tr
         
         # perform the rotative transformation
