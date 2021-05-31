@@ -39,9 +39,10 @@ NAME = "EARTH"
 
 RADIUS = 6371       # radius of parent [km] (R_Earth = 6371)
 MASS = 5.972e24     # mass of Earth [kg] (M_Earth = 5.972e24)
-GRAV = 6.67408e-11  # universal gravitational constant [m3 kg-1 s-2]  
 G = 1371            # incident solar radiation [W/m^2] (G_Earth = 1371)
 
+# universal gravitational constant [m3 kg-1 s-2] 
+GRAV = 6.67408e-11  
 # standard gravitational parameter of Earth [km3 s−2]
 MU = GRAV * MASS / (1000*1000*1000)  
 
@@ -64,8 +65,10 @@ def main(window,
         panelEfficiency, 
         solarAngle):
     
+    # close the GUI window
     window.destroy()
     
+    # protect against non-numeric values of panel area in GUI
     try:
         panelArea = float(panelArea)
     except:
