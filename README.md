@@ -12,7 +12,7 @@ This implementation uses Python to plot an orbit around the central body as defi
 # 1. Installation
 Move to the directory that you would like this repository to live in, open a new terminal and run the following:
 ```
-git clone https://github.com/rdehaggart1/openCosmosChallenge.git
+git clone https://github.com/rdehaggart1/solarPanelOrbit.git
 ```
 
 ## Non-standard Libraries
